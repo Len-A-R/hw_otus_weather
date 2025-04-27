@@ -14,4 +14,12 @@ module.exports = {
       title: "OTUS Weather",
     }),
   ],
+  module: {
+    rules: [
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
+    ],
+  },
 };
