@@ -1,1 +1,1 @@
-console.log('@@Hola! I am alive');
+document.querySelector('h1').innerText = 'Hello, World!';
