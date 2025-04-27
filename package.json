@@ -13,5 +13,8 @@
   "keywords": [],
   "author": "Lenar Akhmetshin <len-a-r@mail.ru>",
   "license": "ISC",
-  "homepage": "https://github.com/Len-A-R/hw_otus_weather.git#readme"
+  "homepage": "https://github.com/Len-A-R/hw_otus_weather.git#readme",
+  "devDependencies": {
+    "prettier": "3.5.3"
+  }
 }
