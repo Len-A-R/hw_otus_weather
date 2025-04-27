@@ -4,6 +4,7 @@ import json from "@eslint/json";
 import markdown from "@eslint/markdown";
 import css from "@eslint/css";
 import { defineConfig } from "eslint/config";
+import eslintPluginPrettierRecommended from "eslint-plugin-prettier/recommended";
 
 export default defineConfig([
   {
@@ -37,4 +38,5 @@ export default defineConfig([
     // Note: there should be no other properties in this object
     ignores: ["package-lock.json"],
   },
+  eslintPluginPrettierRecommended,
 ]);
