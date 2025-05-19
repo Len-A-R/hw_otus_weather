@@ -28,20 +28,15 @@ sectionInput.appendChild(showButton);
 // секция для отображения карты
 const sectionMap = createElement("section", { class: "sectionMap" });
 
-const MAPS_API_URL = "https://maps.googleapis.com/maps/api/staticmap";
+const MAPS_API_URL = "https://static-maps.yandex.ru/1.x/";
 const mapParams = {
-  center: "Brooklyn+Bridge,New+York,NY",
-  zoom: "13",
-  size: "600x300",
-  maptype: "roadmap",
-  markers: [
-    "color:blue%7Clabel:S%7C40.702147,-74.015794",
-    "color:green%7Clabel:G%7C40.711614,-74.012318",
-    "color:red%7Clabel:C%7C40.718217,-73.998284",
-  ].join("&markers="),
-  key: "AIzaSyD0_y22-Zy1-71-gq88z913496_7-958I",
+  l: "map", // тип карты (map - схема, sat - спутник, skl - гибрид)
+  size: "600,450", // размер изображения
+  z: "13", // уровень масштабирования (zoom)
+  ll: "37.620070,55.753630", // координаты центра карты (долгота,широта) - Москва по умолчанию
+  pt: "37.620070,55.753630,pm2rdm", // маркер (долгота,широта,стиль_маркера)
+  // API ключ не требуется для базового использования
 };
-
 const mapUrl = `${MAPS_API_URL}?${new URLSearchParams(mapParams)}`;
 
 const cityMapImage = createElement("img", {
