@@ -36,7 +36,7 @@ export default defineConfig([
   },
   {
     // Note: there should be no other properties in this object
-    ignores: ["package-lock.json"],
+    ignores: ["package-lock.json", "dist/**/*"],
   },
   eslintPluginPrettierRecommended,
 ]);

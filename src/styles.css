@@ -1,4 +1,26 @@
-h1 {
-  color: pink;
-  font-size: 56px;
+#cityEditor {
+  font-size: 1.5rem;
+  font-family: "Roboto", sans-serif;
+  font-weight: 300;
+  color: #333;
+}
+
+#showButton {
+  font-size: 1.5rem;
+  font-family: "Roboto", sans-serif;
+  font-weight: 300;
+  color: #333;
+}
+
+#cityMapImage {
+  display: block;
+  width: 640px;
+  height: 480px;
+}
+
+#weatherInfo {
+  font-size: 1.5rem;
+  font-family: "Roboto", sans-serif;
+  font-weight: 300;
+  color: #333;
 }
