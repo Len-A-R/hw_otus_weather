@@ -1,82 +1,143 @@
 import "./styles.css";
+import { CityInput } from "./components/CityInput.js";
+import { WeatherMap } from "./components/WeatherMap.js";
+import { WeatherInfo } from "./components/WeatherInfo.js";
+import { SearchHistory } from "./components/SearchHistory.js";
+import { getCoordinates } from "./services/map.js";
 
-// Функция для создания элемента с заданными атрибутами и текстом
-const createElement = (tag, attributes = {}, text = "") => {
-  const element = document.createElement(tag);
-  Object.entries(attributes).forEach(([key, value]) => {
-    element.setAttribute(key, value);
-  });
-  if (text) element.innerText = text;
-  return element;
-};
+class WeatherApp {
+  constructor() {
+    this.app = document.querySelector(".app");
+    this.initComponents();
+    this.mountComponents();
+    this.loadCurrentLocation();
+  }
 
-// надходим основной элемент на странице
-const app = document.querySelector(".app");
+  initComponents() {
+    // Инициализация компонентов с передачей колбэков
+    this.cityInput = new CityInput(this.searchCity.bind(this));
+    this.weatherMap = new WeatherMap();
+    this.weatherInfo = new WeatherInfo();
+    this.searchHistory = new SearchHistory(
+      this.selectCityFromHistory.bind(this),
+    );
+  }
 
-// секция для ввода города
-const sectionInput = createElement("section", { class: "sectionInput" });
-const cityEditor = createElement("input", {
-  class: "cityEditor",
-  type: "text",
-  placeholder: "Weather",
+  mountComponents() {
+    // Добавление компонентов на страницу
+    this.app.appendChild(this.cityInput.element);
+    this.app.appendChild(this.weatherMap.element);
+    this.app.appendChild(this.weatherInfo.element);
+    this.app.appendChild(this.searchHistory.element);
+  }
+
+  async searchCity(city) {
+    this.weatherInfo.setLoading(city);
+
+    try {
+      const coordinates = await getCoordinates(city);
+
+      // Обновляем карту
+      this.weatherMap.updateMap(coordinates.longitude, coordinates.latitude);
+
+      // Обновляем информацию о погоде
+      const success = await this.weatherInfo.updateWeather(coordinates, city);
+
+      if (success) {
+        // Добавляем город в историю
+        this.searchHistory.addCity(coordinates.shortName || city);
+      }
+    } catch (error) {
+      this.weatherInfo.setError(city);
+      console.error(error);
+    }
+  }
+
+  selectCityFromHistory(city) {
+    this.cityInput.setCity(city);
+    this.searchCity(city);
+  }
+
+  loadCurrentLocation() {
+    // Проверяем поддержку геолокации в браузере
+    if (navigator.geolocation) {
+      // Показываем сообщение о получении местоположения
+      this.weatherInfo.info.innerText = "Определение вашего местоположения...";
+
+      // Запрашиваем текущие координаты
+      navigator.geolocation.getCurrentPosition(
+        // Успешное получение координат
+        async (position) => {
+          try {
+            const latitude = position.coords.latitude;
+            const longitude = position.coords.longitude;
+
+            console.log("Текущие координаты:", latitude, longitude);
+
+            // Обновляем карту с текущими координатами
+            this.weatherMap.updateMap(longitude, latitude);
+
+            // Получаем название места по координатам (обратное геокодирование)
+            const response = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`,
+            );
+
+            if (!response.ok) {
+              throw new Error("Ошибка при определении местоположения");
+            }
+
+            const data = await response.json();
+            const cityName =
+              data.address.city ||
+              data.address.town ||
+              data.address.village ||
+              data.address.county ||
+              "Неизвестное местоположение";
+
+            console.log("Определенное местоположение:", cityName);
+
+            // Устанавливаем название города в поле ввода
+            this.cityInput.setCity(cityName);
+
+            // Получаем и отображаем данные о погоде
+            await this.weatherInfo.updateWeather(
+              { latitude, longitude },
+              cityName,
+            );
+
+            // Добавляем город в историю
+            this.searchHistory.addCity(cityName);
+          } catch (error) {
+            console.error("Ошибка при обработке местоположения:", error);
+            this.loadDefaultCity(); // Загружаем данные для Москвы в случае ошибки
+          }
+        },
+        // Ошибка получения координат
+        (error) => {
+          console.error("Ошибка геолокации:", error);
+          this.loadDefaultCity(); // Загружаем данные для Москвы в случае ошибки
+        },
+        // Опции геолокации
+        {
+          enableHighAccuracy: true,
+          timeout: 5000,
+          maximumAge: 0,
+        },
+      );
+    } else {
+      // Если геолокация не поддерживается
+      console.log("Геолокация не поддерживается вашим браузером");
+      this.loadDefaultCity(); // Загружаем данные для Москвы
+    }
+  }
+  loadDefaultCity() {
+    const defaultCity = "Москва";
+    this.cityInput.setCity(defaultCity);
+    this.searchCity(defaultCity);
+  }
+}
+
+// Запускаем приложение при загрузке DOM
+document.addEventListener("DOMContentLoaded", () => {
+  new WeatherApp();
 });
-
-const showButton = createElement("button", { class: "showButton" }, "Show");
-sectionInput.appendChild(cityEditor);
-sectionInput.appendChild(showButton);
-
-// секция для отображения карты
-const sectionMap = createElement("section", { class: "sectionMap" });
-
-const MAPS_API_URL = "https://static-maps.yandex.ru/1.x/";
-const mapParams = {
-  l: "map", // тип карты (map - схема, sat - спутник, skl - гибрид)
-  size: "600,450", // размер изображения
-  z: "13", // уровень масштабирования (zoom)
-  ll: "37.620070,55.753630", // координаты центра карты (долгота,широта) - Москва по умолчанию
-  pt: "37.620070,55.753630,pm2rdm", // маркер (долгота,широта,стиль_маркера)
-  // API ключ не требуется для базового использования
-};
-const mapUrl = `${MAPS_API_URL}?${new URLSearchParams(mapParams)}`;
-
-const cityMapImage = createElement("img", {
-  class: "cityMapImage",
-  src: mapUrl,
-});
-sectionMap.appendChild(cityMapImage);
-
-// секция для отображения информации о погоде
-const sectionWeather = createElement("section", { class: "sectionWeather" });
-const weatherInfo = createElement(
-  "p",
-  { class: "weatherInfo" },
-  "Weather info",
-);
-sectionWeather.appendChild(weatherInfo);
-
-// секция для истории поиска
-const sectionHistory = createElement("section", { class: "sectionHistory" });
-const historyLabel = createElement(
-  "label",
-  { class: "historyLabel" },
-  "History",
-);
-const historyLine = createElement("hr");
-const historyList = createElement("ul");
-//добавим в список элементы Moscow, London, New York
-const historyListItems = ["Moscow", "London", "New York"];
-historyListItems.forEach((item) => {
-  const historyListItem = document.createElement("li");
-  historyListItem.innerText = item;
-  historyList.appendChild(historyListItem);
-});
-
-sectionHistory.appendChild(historyLabel);
-sectionHistory.appendChild(historyLine);
-sectionHistory.appendChild(historyList);
-
-app.appendChild(cityEditor);
-app.appendChild(showButton);
-app.appendChild(cityMapImage);
-app.appendChild(weatherInfo);
-app.appendChild(sectionHistory);
